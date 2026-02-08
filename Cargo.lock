@@ -1123,7 +1123,7 @@ dependencies = [
  "bevy_hanabi",
  "bevy_seedling",
  "getrandom",
- "noiz",
+ "noisy_bevy",
  "rand",
  "tracing",
 ]
@@ -3888,14 +3888,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2bf50223579dc7cdcfb3bfcacf7069ff68243f8c363f62ffa99cf000a6b9c451"
 
 [[package]]
-name = "noiz"
-version = "0.4.0"
+name = "noisy_bevy"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a91cd88947d648a58f0f7820781e00e8c24fecfa7b00eca62ca3b7b7afe92395"
+checksum = "8b1da9079489877942e9048c7185096f462f585f5aaa4364c9db4af1aca872a0"
 dependencies = [
- "bevy_math",
- "bevy_reflect",
- "serde",
+ "bevy",
 ]
 
 [[package]]

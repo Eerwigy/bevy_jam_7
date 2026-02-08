@@ -10,7 +10,7 @@ bevy_asset_loader = "0.25"
 bevy_hanabi = "0.18"
 bevy-inspector-egui = { version = "0.36", optional = true }
 bevy_seedling = "0.7"
-noiz = "0.4.0"
+noisy_bevy = "0.13.0"
 rand = "0.9"
 tracing = { version = "0.1", features = [
   "max_level_debug",
