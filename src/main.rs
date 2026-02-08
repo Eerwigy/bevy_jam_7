@@ -3,6 +3,7 @@
 
 mod assets;
 mod camera;
+mod chessboard;
 #[cfg(feature = "dev")]
 mod dev_tools;
 mod loading;
@@ -41,6 +42,7 @@ impl Plugin for AppPlugin {
 
         app.add_plugins((
             camera::plugin,
+            chessboard::plugin,
             #[cfg(feature = "dev")]
             dev_tools::plugin,
             loading::plugin,

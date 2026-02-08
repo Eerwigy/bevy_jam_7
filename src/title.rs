@@ -6,7 +6,10 @@ const PRESS_TO_PLAY: &str = "Press [SPACE] to PLay";
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(AppState::Title), setup);
-    app.add_systems(Update, animate_text.run_if(in_state(AppState::Title)));
+    app.add_systems(
+        Update,
+        (animate_text, press_space).run_if(in_state(AppState::Title)),
+    );
 }
 
 #[derive(Component)]
@@ -87,5 +90,11 @@ fn animate_text(
         let end = (*char_index + 1).min(PRESS_TO_PLAY.len());
         text.0 = PRESS_TO_PLAY[..end].to_string();
         *char_index += 1;
+    }
+}
+
+fn press_space(mut state: ResMut<NextState<AppState>>, input: Res<ButtonInput<KeyCode>>) {
+    if input.just_pressed(KeyCode::Space) {
+        state.set(AppState::Main);
     }
 }
