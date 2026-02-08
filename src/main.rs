@@ -1,6 +1,7 @@
 #![cfg_attr(bevy_lint, feature(register_tool), register_tool(bevy))]
 #![cfg_attr(not(feature = "dev"), windows_subsystem = "windows")]
 
+mod assets;
 mod camera;
 #[cfg(feature = "dev")]
 mod dev_tools;
@@ -8,7 +9,6 @@ mod loading;
 mod title;
 
 use bevy::{asset::AssetMetaCheck, prelude::*};
-use bevy_asset_loader::prelude::*;
 use bevy_seedling::SeedlingPlugin;
 
 fn main() -> AppExit {
@@ -42,6 +42,7 @@ impl Plugin for AppPlugin {
             #[cfg(feature = "dev")]
             dev_tools::plugin,
             loading::plugin,
+            title::plugin,
         ));
 
         app.init_state::<AppState>();
