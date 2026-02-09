@@ -7,6 +7,7 @@ mod camera;
 mod chessboard;
 #[cfg(feature = "dev")]
 mod dev_tools;
+mod faller;
 mod loading;
 mod title;
 
@@ -46,6 +47,7 @@ impl Plugin for AppPlugin {
             chessboard::plugin,
             #[cfg(feature = "dev")]
             dev_tools::plugin,
+            faller::plugin,
             loading::plugin,
             title::plugin,
         ));
