@@ -2,6 +2,7 @@
 #![cfg_attr(not(feature = "dev"), windows_subsystem = "windows")]
 
 mod assets;
+mod behaviour;
 mod camera;
 mod chessboard;
 #[cfg(feature = "dev")]
@@ -50,6 +51,7 @@ impl Plugin for AppPlugin {
         ));
 
         app.init_state::<AppState>();
+        app.insert_resource(ClearColor(Color::hsl(200.0, 0.9, 0.1)));
     }
 }
 
