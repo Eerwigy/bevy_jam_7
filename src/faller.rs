@@ -46,6 +46,7 @@ fn spawn_fallers(
                 -10.0,
             )
             .with_rotation(Quat::from_rotation_z(rng.random_range(-PI..PI))),
+            InheritedVisibility::default(),
             children![
                 Sprite::from_image(bg.pawn.clone()),
                 Sprite::from_image(fg.pawn.clone()),
@@ -55,7 +56,7 @@ fn spawn_fallers(
 }
 
 fn update_fallers(
-    mut query: Query<&mut Transform, (With<Faller>)>,
+    mut query: Query<&mut Transform, With<Faller>>,
     time: Res<Time>,
     camera: Query<&Projection, With<Camera2d>>,
 ) {

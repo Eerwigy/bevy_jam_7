@@ -1,8 +1,4 @@
-use crate::{
-    AppState,
-    assets::{SpritesBgCollection, SpritesFgCollection},
-    behaviour::{PieceColor, PieceKind},
-};
+use crate::{AppState, assets::*, behaviour::*};
 use bevy::prelude::*;
 
 const DARK: Color = Color::hsl(200.0, 1.0, 0.25);
@@ -29,62 +25,12 @@ impl GridCoords {
     }
 }
 
-fn setup(mut commands: Commands, fg: Res<SpritesFgCollection>, bg: Res<SpritesBgCollection>) {
-    let chessboard = commands
-        .spawn((
-            Name::new("Chessboard"),
-            Node {
-                width: vh(80.0),
-                height: vh(80.0),
-                display: Display::Grid,
-                padding: px(10.0).into(),
-                grid_template_columns: RepeatedGridTrack::flex(8, 1.0),
-                grid_template_rows: RepeatedGridTrack::flex(8, 1.0),
-                ..default()
-            },
-            BackgroundColor(DARK),
-        ))
-        .with_children(|p| {
-            for x in 0_i32..8 {
-                for y in 0_i32..8 {
-                    let mut square = p.spawn((
-                        Name::new("Board Square"),
-                        TileGrid,
-                        GridCoords::new(x, y),
-                        Node {
-                            width: percent(100.0),
-                            height: percent(100.0),
-                            grid_row: GridPlacement::start(y as i16 + 1),
-                            grid_column: GridPlacement::start(x as i16 + 1),
-                            overflow: Overflow::visible(),
-                            justify_content: JustifyContent::Center,
-                            align_items: AlignItems::End,
-                            ..default()
-                        },
-                        BackgroundColor(if (x + y) % 2 == 0 { LIGHT } else { DARK }),
-                        Interaction::None,
-                        ZIndex(10),
-                    ));
-
-                    let Some((color, kind)) = get_piece(x, y) else {
-                        continue;
-                    };
-
-                    let (fg, bg) = match kind {
-                        PieceKind::Pawn => (fg.pawn.clone(), bg.pawn.clone()),
-                        PieceKind::Knight => (fg.knight.clone(), bg.knight.clone()),
-                        PieceKind::Bishop => (fg.bishop.clone(), bg.bishop.clone()),
-                        PieceKind::Rook => (fg.rook.clone(), bg.rook.clone()),
-                        PieceKind::Queen => (fg.queen.clone(), bg.queen.clone()),
-                        PieceKind::King => (fg.king.clone(), bg.king.clone()),
-                    };
-
-                    square.insert(spawn_piece_node(color, bg, fg));
-                }
-            }
-        })
-        .id();
-
+fn setup(
+    mut commands: Commands,
+    font: Res<FontsCollection>,
+    fg: Res<SpritesFgCollection>,
+    bg: Res<SpritesBgCollection>,
+) {
     commands
         .spawn((
             Name::new("Main Node"),
@@ -96,9 +42,115 @@ fn setup(mut commands: Commands, fg: Res<SpritesFgCollection>, bg: Res<SpritesBg
                 flex_direction: FlexDirection::Row,
                 ..default()
             },
-            children![(Name::new("Character"),),],
         ))
-        .add_child(chessboard);
+        .with_children(|p| {
+            p.spawn((
+                Name::new("Left Panel"),
+                Node {
+                    height: percent(100.0),
+                    flex_direction: FlexDirection::Column,
+                    position_type: PositionType::Absolute,
+                    left: px(10.0),
+                    top: px(10.0),
+                    ..default()
+                },
+                children![
+                    (
+                        Name::new("Money Text"),
+                        Text::new("Money: "),
+                        TextFont {
+                            font: font.title.clone(),
+                            ..default()
+                        },
+                    ),
+                    (
+                        Name::new("Turns Text"),
+                        Text::new("Turns Left: "),
+                        TextFont {
+                            font: font.title.clone(),
+                            ..default()
+                        },
+                    ),
+                    (
+                        Name::new("Abilities Text"),
+                        Text::new("Abilities Left: "),
+                        TextFont {
+                            font: font.title.clone(),
+                            ..default()
+                        },
+                    ),
+                    (
+                        Name::new("Selected Text"),
+                        Text::new("Selected: "),
+                        TextFont {
+                            font: font.title.clone(),
+                            ..default()
+                        },
+                    ),
+                ],
+            ));
+            p.spawn((
+                Name::new("Chessboard"),
+                Node {
+                    width: vh(80.0),
+                    height: vh(80.0),
+                    display: Display::Grid,
+                    padding: px(10.0).into(),
+                    grid_template_columns: RepeatedGridTrack::flex(8, 1.0),
+                    grid_template_rows: RepeatedGridTrack::flex(8, 1.0),
+                    ..default()
+                },
+                BackgroundColor(DARK),
+            ))
+            .with_children(|p| {
+                for x in 0_i32..8 {
+                    for y in 0_i32..8 {
+                        let mut square = p.spawn((
+                            Name::new("Board Square"),
+                            TileGrid,
+                            GridCoords::new(x, y),
+                            Node {
+                                width: percent(100.0),
+                                height: percent(100.0),
+                                grid_row: GridPlacement::start(y as i16 + 1),
+                                grid_column: GridPlacement::start(x as i16 + 1),
+                                overflow: Overflow::visible(),
+                                justify_content: JustifyContent::Center,
+                                align_items: AlignItems::End,
+                                ..default()
+                            },
+                            BackgroundColor(if (x + y) % 2 == 0 { LIGHT } else { DARK }),
+                            Interaction::None,
+                            ZIndex(10),
+                        ));
+
+                        let Some((color, kind)) = get_piece(x, y) else {
+                            continue;
+                        };
+
+                        let (fg, bg, health) = match kind {
+                            PieceKind::Pawn => (fg.pawn.clone(), bg.pawn.clone(), PAWN_HEALTH),
+                            PieceKind::Knight => {
+                                (fg.knight.clone(), bg.knight.clone(), KNIGHT_HEALTH)
+                            }
+                            PieceKind::Bishop => {
+                                (fg.bishop.clone(), bg.bishop.clone(), BISHOP_HEALTH)
+                            }
+                            PieceKind::Rook => (fg.rook.clone(), bg.rook.clone(), ROOK_HEALTH),
+                            PieceKind::Queen => (fg.queen.clone(), bg.queen.clone(), QUEEN_HEALTH),
+                            PieceKind::King => (fg.king.clone(), bg.king.clone(), KING_HEALTH),
+                        };
+
+                        square.insert(spawn_piece_node(color, bg, fg));
+                        square.with_child((Piece {
+                            color,
+                            kind,
+                            health,
+                        },));
+                    }
+                }
+            });
+        });
 }
 
 fn interact(

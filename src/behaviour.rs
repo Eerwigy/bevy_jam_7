@@ -1,11 +1,11 @@
 use bevy::prelude::*;
 
-const PAWN_HEALTH: f32 = 50.0;
-const KNIGHT_HEALTH: f32 = 100.0;
-const BISHOP_HEALTH: f32 = 100.0;
-const ROOK_HEALTH: f32 = 200.0;
-const QUEEN_HEALTH: f32 = 150.0;
-const KING_HEALTH: f32 = 300.0;
+pub const PAWN_HEALTH: f32 = 50.0;
+pub const KNIGHT_HEALTH: f32 = 100.0;
+pub const BISHOP_HEALTH: f32 = 100.0;
+pub const ROOK_HEALTH: f32 = 200.0;
+pub const QUEEN_HEALTH: f32 = 150.0;
+pub const KING_HEALTH: f32 = 300.0;
 
 #[derive(Component, Reflect, Copy, Clone, Debug)]
 #[reflect(Component)]
