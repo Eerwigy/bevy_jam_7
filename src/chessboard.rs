@@ -1,6 +1,7 @@
 use crate::{
     AppState,
     assets::{SpritesBgCollection, SpritesFgCollection},
+    behaviour::{PieceColor, PieceKind},
 };
 use bevy::prelude::*;
 
@@ -44,17 +45,17 @@ fn setup(mut commands: Commands, fg: Res<SpritesFgCollection>, bg: Res<SpritesBg
             BackgroundColor(DARK),
         ))
         .with_children(|p| {
-            for y in 0_i32..8 {
-                for x in 0_i32..8 {
-                    p.spawn((
+            for x in 0_i32..8 {
+                for y in 0_i32..8 {
+                    let mut square = p.spawn((
                         Name::new("Board Square"),
                         TileGrid,
                         GridCoords::new(x, y),
                         Node {
                             width: percent(100.0),
                             height: percent(100.0),
-                            grid_row: GridPlacement::start(x as i16 + 1),
-                            grid_column: GridPlacement::start(y as i16 + 1),
+                            grid_row: GridPlacement::start(y as i16 + 1),
+                            grid_column: GridPlacement::start(x as i16 + 1),
                             overflow: Overflow::visible(),
                             justify_content: JustifyContent::Center,
                             align_items: AlignItems::End,
@@ -63,33 +64,22 @@ fn setup(mut commands: Commands, fg: Res<SpritesFgCollection>, bg: Res<SpritesBg
                         BackgroundColor(if (x + y) % 2 == 0 { LIGHT } else { DARK }),
                         Interaction::None,
                         ZIndex(10),
-                        children![
-                            (
-                                Name::new("Piece Node Bg"),
-                                Node {
-                                    width: percent(100.0),
-                                    position_type: PositionType::Absolute,
-                                    ..default()
-                                },
-                                ImageNode {
-                                    image: bg.pawn.clone(),
-                                    ..default()
-                                }
-                            ),
-                            (
-                                Name::new("Piece Node Fg"),
-                                Node {
-                                    width: percent(100.0),
-                                    position_type: PositionType::Absolute,
-                                    ..default()
-                                },
-                                ImageNode {
-                                    image: fg.pawn.clone(),
-                                    ..default()
-                                }
-                            ),
-                        ],
                     ));
+
+                    let Some((color, kind)) = get_piece(x, y) else {
+                        continue;
+                    };
+
+                    let (fg, bg) = match kind {
+                        PieceKind::Pawn => (fg.pawn.clone(), bg.pawn.clone()),
+                        PieceKind::Knight => (fg.knight.clone(), bg.knight.clone()),
+                        PieceKind::Bishop => (fg.bishop.clone(), bg.bishop.clone()),
+                        PieceKind::Rook => (fg.rook.clone(), bg.rook.clone()),
+                        PieceKind::Queen => (fg.queen.clone(), bg.queen.clone()),
+                        PieceKind::King => (fg.king.clone(), bg.king.clone()),
+                    };
+
+                    square.insert(spawn_piece_node(color, bg, fg));
                 }
             }
         })
@@ -139,4 +129,70 @@ fn interact(
             }
         }
     }
+}
+
+fn spawn_piece_node(color: PieceColor, bg: Handle<Image>, fg: Handle<Image>) -> impl Bundle {
+    let color = match color {
+        PieceColor::White => Color::hsl(175.0, 1.0, 0.75),
+        PieceColor::Black => Color::hsl(10.0, 1.0, 0.25),
+    };
+
+    children![
+        (
+            Name::new("Piece Node Bg"),
+            Node {
+                width: percent(100.0),
+                position_type: PositionType::Absolute,
+                ..default()
+            },
+            ImageNode {
+                color,
+                image: bg,
+                ..default()
+            }
+        ),
+        (
+            Name::new("Piece Node Fg"),
+            Node {
+                width: percent(100.0),
+                position_type: PositionType::Absolute,
+                ..default()
+            },
+            ImageNode {
+                image: fg,
+                ..default()
+            }
+        ),
+    ]
+}
+
+fn get_piece(x: i32, y: i32) -> Option<(PieceColor, PieceKind)> {
+    if y == 1 {
+        return Some((PieceColor::Black, PieceKind::Pawn));
+    }
+
+    if y == 6 {
+        return Some((PieceColor::White, PieceKind::Pawn));
+    }
+
+    let kind = match x {
+        0 | 7 => PieceKind::Rook,
+        1 | 6 => PieceKind::Knight,
+        2 | 5 => PieceKind::Bishop,
+        3 => PieceKind::Queen,
+        4 => PieceKind::King,
+        _ => {
+            unreachable!();
+        }
+    };
+
+    if y == 0 {
+        return Some((PieceColor::Black, kind));
+    }
+
+    if y == 7 {
+        return Some((PieceColor::White, kind));
+    }
+
+    None
 }

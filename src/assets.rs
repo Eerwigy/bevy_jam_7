@@ -27,14 +27,14 @@ pub struct SpritesFgCollection {
 pub struct SpritesBgCollection {
     #[asset(path = "sprites/bg/pawn.png")]
     pub pawn: Handle<Image>,
-    // #[asset(path = "sprites/bg/knight.png")]
-    // pub knight: Handle<Image>,
-    // #[asset(path = "sprites/bg/bishop.png")]
-    // pub bishop: Handle<Image>,
-    // #[asset(path = "sprites/bg/rook.png")]
-    // pub rook: Handle<Image>,
-    // #[asset(path = "sprites/bg/queen.png")]
-    // pub queen: Handle<Image>,
-    // #[asset(path = "sprites/bg/king.png")]
-    // pub king: Handle<Image>,
+    #[asset(path = "sprites/bg/knight.png")]
+    pub knight: Handle<Image>,
+    #[asset(path = "sprites/bg/bishop.png")]
+    pub bishop: Handle<Image>,
+    #[asset(path = "sprites/bg/rook.png")]
+    pub rook: Handle<Image>,
+    #[asset(path = "sprites/bg/queen.png")]
+    pub queen: Handle<Image>,
+    #[asset(path = "sprites/bg/king.png")]
+    pub king: Handle<Image>,
 }
