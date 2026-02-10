@@ -5,12 +5,21 @@ const DARK: Color = Color::hsl(200.0, 1.0, 0.25);
 const LIGHT: Color = Color::hsl(200.0, 1.0, 0.5);
 const HOVER: Color = Color::hsl(200.0, 1.0, 0.8);
 const LEGAL: Color = Color::hsl(100.0, 0.5, 0.8);
+const SELECT: Color = Color::hsl(10.0, 0.5, 0.8);
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(AppState::Main), setup);
-    app.add_systems(Update, interact.run_if(in_state(AppState::Main)));
+    app.add_systems(
+        Update,
+        (interact, update_tile_colors)
+            .chain()
+            .run_if(in_state(AppState::Main)),
+    );
     app.register_type::<GridCoords>();
 }
+
+#[derive(Component)]
+pub struct Selected;
 
 #[derive(Component)]
 pub struct TileGrid;
@@ -154,32 +163,42 @@ fn setup(
 }
 
 fn interact(
+    mut commands: Commands,
+    query: Query<(Entity, &Interaction), (With<TileGrid>, Changed<Interaction>)>,
+    selected: Query<Entity, With<Selected>>,
+) {
+    for (entity, interaction) in &query {
+        if *interaction == Interaction::Pressed {
+            for e in &selected {
+                commands.entity(e).remove::<Selected>();
+            }
+
+            commands.entity(entity).insert(Selected);
+        }
+    }
+}
+
+fn update_tile_colors(
     mut query: Query<
-        (&Interaction, &GridCoords, &mut BackgroundColor),
-        (With<TileGrid>, Changed<Interaction>),
+        (
+            &GridCoords,
+            &Interaction,
+            Option<&Selected>,
+            &mut BackgroundColor,
+        ),
+        With<TileGrid>,
     >,
 ) {
-    for (inter, grid, mut bg) in &mut query {
-        match inter {
-            Interaction::Pressed => {
-                println!("{} clicked", grid.0);
-                bg.0 = if grid.0.element_sum() % 2 == 0 {
-                    LIGHT
-                } else {
-                    DARK
-                };
-            }
-            Interaction::Hovered => {
-                bg.0 = HOVER;
-            }
-            Interaction::None => {
-                bg.0 = if grid.0.element_sum() % 2 == 0 {
-                    LIGHT
-                } else {
-                    DARK
-                };
-            }
-        }
+    for (grid, interaction, selected, mut bg) in &mut query {
+        bg.0 = if selected.is_some() {
+            SELECT
+        } else if *interaction == Interaction::Hovered {
+            HOVER
+        } else if grid.0.element_sum() % 2 == 0 {
+            LIGHT
+        } else {
+            DARK
+        };
     }
 }
 
