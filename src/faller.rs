@@ -48,7 +48,11 @@ fn spawn_fallers(
             .with_rotation(Quat::from_rotation_z(rng.random_range(-PI..PI))),
             InheritedVisibility::default(),
             children![
-                Sprite::from_image(bg.pawn.clone()),
+                Sprite {
+                    image: bg.pawn.clone(),
+                    color: Color::srgb_u8(rng.random(), rng.random(), rng.random()),
+                    ..default()
+                },
                 Sprite::from_image(fg.pawn.clone()),
             ],
         ));
