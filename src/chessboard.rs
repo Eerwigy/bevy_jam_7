@@ -11,12 +11,15 @@ pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(AppState::Main), setup);
     app.add_systems(
         Update,
-        (interact, update_tile_colors)
+        (interact, deselect, update_tile_colors, update_selected_text)
             .chain()
             .run_if(in_state(AppState::Main)),
     );
     app.register_type::<GridCoords>();
 }
+
+#[derive(Component)]
+pub struct SelectedText;
 
 #[derive(Component)]
 pub struct Selected;
@@ -69,6 +72,7 @@ fn setup(
                         Text::new("Money: "),
                         TextFont {
                             font: font.title.clone(),
+                            font_size: 32.0,
                             ..default()
                         },
                     ),
@@ -77,6 +81,7 @@ fn setup(
                         Text::new("Turns Left: "),
                         TextFont {
                             font: font.title.clone(),
+                            font_size: 32.0,
                             ..default()
                         },
                     ),
@@ -85,14 +90,17 @@ fn setup(
                         Text::new("Abilities Left: "),
                         TextFont {
                             font: font.title.clone(),
+                            font_size: 32.0,
                             ..default()
                         },
                     ),
                     (
                         Name::new("Selected Text"),
                         Text::new("Selected: "),
+                        SelectedText,
                         TextFont {
                             font: font.title.clone(),
+                            font_size: 32.0,
                             ..default()
                         },
                     ),
@@ -178,6 +186,18 @@ fn interact(
     }
 }
 
+fn deselect(
+    mut commands: Commands,
+    keys: Res<ButtonInput<KeyCode>>,
+    selected: Query<Entity, With<Selected>>,
+) {
+    if keys.just_pressed(KeyCode::Escape) {
+        for entity in &selected {
+            commands.entity(entity).remove::<Selected>();
+        }
+    }
+}
+
 fn update_tile_colors(
     mut query: Query<
         (
@@ -200,6 +220,34 @@ fn update_tile_colors(
             DARK
         };
     }
+}
+
+fn update_selected_text(
+    mut text_query: Query<&mut Text, With<SelectedText>>,
+    children: Query<&Children>,
+    selected_tile: Query<Entity, With<Selected>>,
+    pieces: Query<&Piece>,
+) {
+    let mut text = text_query.single_mut().unwrap();
+
+    let Ok(tile) = selected_tile.single() else {
+        text.0 = "Selected: None".to_string();
+        return;
+    };
+
+    if let Ok(children) = children.get(tile) {
+        for child in children.iter() {
+            if let Ok(piece) = pieces.get(child) {
+                text.0 = format!(
+                    "Selected:\n{:?} {:?}\nHealth: {}\nPress [ESC] to deselect",
+                    piece.color, piece.kind, piece.health
+                );
+                return;
+            }
+        }
+    }
+
+    text.0 = "Selected: Empty".to_string();
 }
 
 fn spawn_piece_node(color: PieceColor, bg: Handle<Image>, fg: Handle<Image>) -> impl Bundle {
