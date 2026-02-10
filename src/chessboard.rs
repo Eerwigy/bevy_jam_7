@@ -239,7 +239,7 @@ fn update_selected_text(
         for child in children.iter() {
             if let Ok(piece) = pieces.get(child) {
                 text.0 = format!(
-                    "Selected:\n{:?} {:?}\nHealth: {}\nPress [ESC] to deselect",
+                    "Selected:\n{:?} {:?}\nHealth: {}\nPress [ESC]\nto deselect",
                     piece.color, piece.kind, piece.health
                 );
                 return;
