@@ -1123,7 +1123,6 @@ dependencies = [
  "bevy_hanabi",
  "bevy_seedling",
  "getrandom",
- "noisy_bevy",
  "rand",
  "tracing",
 ]
@@ -3886,15 +3885,6 @@ name = "nohash-hasher"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2bf50223579dc7cdcfb3bfcacf7069ff68243f8c363f62ffa99cf000a6b9c451"
-
-[[package]]
-name = "noisy_bevy"
-version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b1da9079489877942e9048c7185096f462f585f5aaa4364c9db4af1aca872a0"
-dependencies = [
- "bevy",
-]
 
 [[package]]
 name = "nom"

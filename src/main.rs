@@ -13,7 +13,6 @@ mod title;
 
 use bevy::{asset::AssetMetaCheck, prelude::*};
 use bevy_seedling::SeedlingPlugin;
-use noisy_bevy::NoisyShaderPlugin;
 
 fn main() -> AppExit {
     App::new().add_plugins(AppPlugin).run()
@@ -39,7 +38,6 @@ impl Plugin for AppPlugin {
                     ..default()
                 }),
             SeedlingPlugin::default(),
-            NoisyShaderPlugin,
         ));
 
         app.add_plugins((
