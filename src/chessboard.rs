@@ -1,5 +1,5 @@
 use crate::{AppState, assets::*, behaviour::*};
-use bevy::prelude::*;
+use bevy::{platform::collections::HashSet, prelude::*};
 
 const DARK: Color = Color::hsl(200.0, 1.0, 0.25);
 const LIGHT: Color = Color::hsl(200.0, 1.0, 0.5);
@@ -11,7 +11,13 @@ pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(AppState::Main), setup);
     app.add_systems(
         Update,
-        (interact, deselect, update_tile_colors, update_selected_text)
+        (
+            interact,
+            deselect,
+            find_legal_moves,
+            update_tile_colors,
+            update_selected_text,
+        )
             .chain()
             .run_if(in_state(AppState::Main)),
     );
@@ -23,7 +29,10 @@ pub(super) fn plugin(app: &mut App) {
 pub struct SelectedText;
 
 #[derive(Component)]
-pub struct Selected;
+pub struct SelectedSquare;
+
+#[derive(Component)]
+pub struct LegalSquare;
 
 #[derive(Component)]
 pub struct TileGrid;
@@ -155,11 +164,21 @@ fn setup(
                         };
 
                         square.insert(spawn_piece_node(color, bg, fg));
-                        square.with_child((Piece {
-                            color,
-                            kind,
-                            health,
-                        },));
+
+                        let mut piece_entity: Option<Entity> = None;
+                        square.with_children(|parent| {
+                            let id = parent
+                                .spawn(Piece {
+                                    color,
+                                    kind,
+                                    health,
+                                })
+                                .id();
+
+                            piece_entity = Some(id);
+                        });
+
+                        chessgrid.pieces[x as usize][y as usize] = piece_entity;
                     }
                 }
             });
@@ -171,15 +190,15 @@ fn setup(
 fn interact(
     mut commands: Commands,
     query: Query<(Entity, &Interaction), (With<TileGrid>, Changed<Interaction>)>,
-    selected: Query<Entity, With<Selected>>,
+    selected: Query<Entity, With<SelectedSquare>>,
 ) {
     for (entity, interaction) in &query {
         if *interaction == Interaction::Pressed {
             for e in &selected {
-                commands.entity(e).remove::<Selected>();
+                commands.entity(e).remove::<SelectedSquare>();
             }
 
-            commands.entity(entity).insert(Selected);
+            commands.entity(entity).insert(SelectedSquare);
         }
     }
 }
@@ -187,12 +206,63 @@ fn interact(
 fn deselect(
     mut commands: Commands,
     keys: Res<ButtonInput<KeyCode>>,
-    selected: Query<Entity, With<Selected>>,
+    selected: Query<Entity, With<SelectedSquare>>,
 ) {
     if keys.just_pressed(KeyCode::Escape) {
         for entity in &selected {
-            commands.entity(entity).remove::<Selected>();
+            commands.entity(entity).remove::<SelectedSquare>();
         }
+    }
+}
+
+fn find_legal_moves(
+    mut commands: Commands,
+    chessgrid: Res<ChessGrid>,
+    children: Query<&Children>,
+    selected_tile: Query<(Entity, &GridCoords), With<SelectedSquare>>,
+    legal_tiles: Query<Entity, With<LegalSquare>>,
+    pieces: Query<&Piece>,
+) {
+    for entity in &legal_tiles {
+        commands.entity(entity).remove::<LegalSquare>();
+    }
+
+    let Ok((tile_entity, grid_coords)) = selected_tile.single() else {
+        return;
+    };
+
+    let Ok(children) = children.get(tile_entity) else {
+        return;
+    };
+
+    let mut piece = None;
+
+    for child in children.iter() {
+        if let Ok(p) = pieces.get(child) {
+            piece = Some(*p);
+            break;
+        }
+    }
+
+    let Some(piece) = piece else {
+        return;
+    };
+
+    let moves = match (piece.color, piece.kind) {
+        (PieceColor::White, PieceKind::Pawn) => {
+            WhitePawnBehaviour::get_legal_moves(*grid_coords, *chessgrid)
+        }
+
+        (PieceColor::Black, PieceKind::Pawn) => {
+            BlackPawnBehaviour::get_legal_moves(*grid_coords, *chessgrid)
+        }
+
+        _ => HashSet::default(),
+    };
+
+    for coords in moves {
+        let square_entity = chessgrid.get_square(coords);
+        commands.entity(square_entity).insert(LegalSquare);
     }
 }
 
@@ -201,15 +271,18 @@ fn update_tile_colors(
         (
             &GridCoords,
             &Interaction,
-            Option<&Selected>,
+            Option<&SelectedSquare>,
+            Option<&LegalSquare>,
             &mut BackgroundColor,
         ),
         With<TileGrid>,
     >,
 ) {
-    for (grid, interaction, selected, mut bg) in &mut query {
+    for (grid, interaction, selected, legal, mut bg) in &mut query {
         bg.0 = if selected.is_some() {
             SELECT
+        } else if legal.is_some() {
+            LEGAL
         } else if *interaction == Interaction::Hovered {
             HOVER
         } else if grid.0.element_sum() % 2 == 0 {
@@ -223,7 +296,7 @@ fn update_tile_colors(
 fn update_selected_text(
     mut text_query: Query<&mut Text, With<SelectedText>>,
     children: Query<&Children>,
-    selected_tile: Query<Entity, With<Selected>>,
+    selected_tile: Query<Entity, With<SelectedSquare>>,
     pieces: Query<&Piece>,
 ) {
     let mut text = text_query.single_mut().unwrap();

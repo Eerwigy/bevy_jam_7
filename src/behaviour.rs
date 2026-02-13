@@ -39,13 +39,63 @@ impl GridCoords {
     pub fn new(x: i32, y: i32) -> Self {
         Self(ivec2(x, y))
     }
+
+    pub fn in_bounds(&self) -> bool {
+        self.0.x >= 0 && self.0.x <= 7 && self.0.y >= 0 && self.0.y <= 7
+    }
 }
 
 #[derive(Resource, Debug, Reflect, Default, Clone, Copy)]
 #[reflect(Resource)]
 pub struct ChessGrid {
     pub squares: [[Option<Entity>; 8]; 8],
+    pub pieces: [[Option<Entity>; 8]; 8],
 }
+
+impl ChessGrid {
+    pub fn get_square(&self, GridCoords(IVec2 { x, y }): GridCoords) -> Entity {
+        self.squares[x as usize][y as usize].unwrap()
+    }
+
+    pub fn get_piece(&self, GridCoords(IVec2 { x, y }): GridCoords) -> Option<Entity> {
+        self.pieces[x as usize][y as usize]
+    }
+}
+
 pub trait PieceBehaviour {
     fn get_legal_moves(pos: GridCoords, grid: ChessGrid) -> HashSet<GridCoords>;
+}
+
+pub struct WhitePawnBehaviour;
+pub struct BlackPawnBehaviour;
+pub struct KnightBehaviour;
+pub struct BishopBehaviour;
+pub struct RookBehaviour;
+pub struct QueenBehaviour;
+pub struct KingBehaviour;
+
+impl PieceBehaviour for WhitePawnBehaviour {
+    fn get_legal_moves(pos: GridCoords, grid: ChessGrid) -> HashSet<GridCoords> {
+        let mut moves = HashSet::default();
+        let forward = GridCoords(pos.0 - IVec2::Y);
+
+        if forward.in_bounds() && grid.get_piece(forward).is_none() {
+            moves.insert(forward);
+        }
+
+        moves
+    }
+}
+
+impl PieceBehaviour for BlackPawnBehaviour {
+    fn get_legal_moves(pos: GridCoords, grid: ChessGrid) -> HashSet<GridCoords> {
+        let mut moves = HashSet::default();
+        let forward = GridCoords(pos.0 + IVec2::Y);
+
+        if forward.in_bounds() && grid.get_piece(forward).is_none() {
+            moves.insert(forward);
+        }
+
+        moves
+    }
 }
