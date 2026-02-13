@@ -248,16 +248,14 @@ fn find_legal_moves(
         return;
     };
 
-    let moves = match (piece.color, piece.kind) {
-        (PieceColor::White, PieceKind::Pawn) => {
-            WhitePawnBehaviour::get_legal_moves(*grid_coords, *chessgrid)
-        }
+    let moves = if piece.color == PieceColor::White {
+        match piece.kind {
+            PieceKind::Pawn => WhitePawnBehaviour::get_legal_moves(*grid_coords, *chessgrid),
 
-        (PieceColor::Black, PieceKind::Pawn) => {
-            BlackPawnBehaviour::get_legal_moves(*grid_coords, *chessgrid)
+            _ => HashSet::default(),
         }
-
-        _ => HashSet::default(),
+    } else {
+        HashSet::default()
     };
 
     for coords in moves {
