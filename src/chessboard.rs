@@ -16,6 +16,7 @@ pub(super) fn plugin(app: &mut App) {
             .run_if(in_state(AppState::Main)),
     );
     app.register_type::<GridCoords>();
+    app.register_type::<ChessGrid>();
 }
 
 #[derive(Component)]
@@ -27,22 +28,14 @@ pub struct Selected;
 #[derive(Component)]
 pub struct TileGrid;
 
-#[derive(Debug, Component, Clone, Copy, Reflect)]
-#[reflect(Component)]
-pub struct GridCoords(pub IVec2);
-
-impl GridCoords {
-    pub fn new(x: i32, y: i32) -> Self {
-        Self(ivec2(x, y))
-    }
-}
-
 fn setup(
     mut commands: Commands,
     font: Res<FontsCollection>,
     fg: Res<SpritesFgCollection>,
     bg: Res<SpritesBgCollection>,
 ) {
+    let mut chessgrid = ChessGrid::default();
+
     commands
         .spawn((
             Name::new("Main Node"),
@@ -122,10 +115,11 @@ fn setup(
             .with_children(|p| {
                 for x in 0_i32..8 {
                     for y in 0_i32..8 {
+                        let grid_coords = GridCoords::new(x, y);
                         let mut square = p.spawn((
                             Name::new("Board Square"),
                             TileGrid,
-                            GridCoords::new(x, y),
+                            grid_coords,
                             Node {
                                 width: percent(100.0),
                                 height: percent(100.0),
@@ -140,6 +134,8 @@ fn setup(
                             Interaction::None,
                             ZIndex(10),
                         ));
+
+                        chessgrid.squares[x as usize][y as usize] = Some(square.id());
 
                         let Some((color, kind)) = get_piece(x, y) else {
                             continue;
@@ -168,6 +164,8 @@ fn setup(
                 }
             });
         });
+
+    commands.insert_resource(chessgrid);
 }
 
 fn interact(
