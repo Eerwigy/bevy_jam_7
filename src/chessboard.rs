@@ -251,6 +251,7 @@ fn find_legal_moves(
     let moves = if piece.color == PieceColor::White {
         match piece.kind {
             PieceKind::Pawn => WhitePawnBehaviour::get_legal_moves(*grid_coords, *chessgrid),
+            PieceKind::Knight => KnightBehaviour::get_legal_moves(*grid_coords, *chessgrid),
 
             _ => HashSet::default(),
         }

@@ -77,10 +77,10 @@ pub struct KingBehaviour;
 impl PieceBehaviour for WhitePawnBehaviour {
     fn get_legal_moves(pos: GridCoords, grid: ChessGrid) -> HashSet<GridCoords> {
         let mut moves = HashSet::default();
-        let forward = GridCoords(pos.0 - IVec2::Y);
+        let potential = GridCoords(pos.0 - IVec2::Y);
 
-        if forward.in_bounds() && grid.get_piece(forward).is_none() {
-            moves.insert(forward);
+        if potential.in_bounds() && grid.get_piece(potential).is_none() {
+            moves.insert(potential);
         }
 
         moves
@@ -90,10 +90,36 @@ impl PieceBehaviour for WhitePawnBehaviour {
 impl PieceBehaviour for BlackPawnBehaviour {
     fn get_legal_moves(pos: GridCoords, grid: ChessGrid) -> HashSet<GridCoords> {
         let mut moves = HashSet::default();
-        let forward = GridCoords(pos.0 + IVec2::Y);
+        let potential = GridCoords(pos.0 + IVec2::Y);
 
-        if forward.in_bounds() && grid.get_piece(forward).is_none() {
-            moves.insert(forward);
+        if potential.in_bounds() && grid.get_piece(potential).is_none() {
+            moves.insert(potential);
+        }
+
+        moves
+    }
+}
+
+impl PieceBehaviour for KnightBehaviour {
+    fn get_legal_moves(pos: GridCoords, grid: ChessGrid) -> HashSet<GridCoords> {
+        let mut moves = HashSet::default();
+
+        const OFFSETS: [IVec2; 8] = [
+            IVec2::new(1, 2),
+            IVec2::new(2, 1),
+            IVec2::new(2, -1),
+            IVec2::new(1, -2),
+            IVec2::new(-1, -2),
+            IVec2::new(-2, -1),
+            IVec2::new(-2, 1),
+            IVec2::new(-1, 2),
+        ];
+
+        for offset in OFFSETS {
+            let potential = GridCoords(pos.0 + offset);
+            if potential.in_bounds() && grid.get_piece(potential).is_none() {
+                moves.insert(potential);
+            }
         }
 
         moves
