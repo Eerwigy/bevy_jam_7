@@ -1,11 +1,13 @@
 use crate::{AppState, assets::*, behaviour::*, stats::TurnsStat};
 use bevy::{platform::collections::HashSet, prelude::*};
+use rand::prelude::*;
 
 const DARK: Color = Color::hsl(200.0, 1.0, 0.25);
 const LIGHT: Color = Color::hsl(200.0, 1.0, 0.5);
 const HOVER: Color = Color::hsl(200.0, 1.0, 0.8);
 const LEGAL: Color = Color::hsl(100.0, 0.5, 0.8);
 const SELECT: Color = Color::hsl(10.0, 0.5, 0.8);
+const ATTACK: Color = Color::hsl(50.0, 0.9, 0.5);
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(AppState::Main), setup);
@@ -80,7 +82,7 @@ fn setup(
                 children![
                     (
                         Name::new("Pass Text"),
-                        Text::new("Press [P] to Pass"),
+                        Text::new("Press [P] to Pass\nor End Turn"),
                         TextFont {
                             font: font.title.clone(),
                             font_size: 32.0,
@@ -409,10 +411,95 @@ fn update_turns_text(mut text_query: Query<&mut Text, With<TurnsText>>, turns: R
     text.0 = format!("Turns Left: {}", turns.0);
 }
 
-fn pass_turn(mut turns: ResMut<TurnsStat>, keys: Res<ButtonInput<KeyCode>>) {
-    if keys.just_pressed(KeyCode::KeyP) {
-        turns.0 = 3;
+fn pass_turn(
+    mut commands: Commands,
+    mut turns: ResMut<TurnsStat>,
+    keys: Res<ButtonInput<KeyCode>>,
+    mut chessgrid: ResMut<ChessGrid>,
+    pieces: Query<&Piece>,
+    tiles: Query<(Entity, &GridCoords), With<TileGrid>>,
+    children: Query<&Children>,
+) {
+    if !keys.just_pressed(KeyCode::KeyP) {
+        return;
     }
+
+    let mut rng = rand::rng();
+
+    for _ in 0..3 {
+        for _ in 0..64 {
+            let x = rng.random_range(0..8);
+            let y = rng.random_range(0..8);
+
+            let from = GridCoords::new(x, y);
+            let Some(piece_ent) = chessgrid.get_piece(from) else {
+                continue;
+            };
+
+            let piece = pieces.get(piece_ent).unwrap();
+
+            if piece.color == PieceColor::White {
+                continue;
+            }
+
+            let moves = match piece.kind {
+                PieceKind::Pawn => BlackPawnBehaviour::get_legal_moves(from, *chessgrid),
+                PieceKind::Knight => KnightBehaviour::get_legal_moves(from, *chessgrid),
+                PieceKind::Bishop => BishopBehaviour::get_legal_moves(from, *chessgrid),
+                PieceKind::Rook => RookBehaviour::get_legal_moves(from, *chessgrid),
+                PieceKind::Queen => QueenBehaviour::get_legal_moves(from, *chessgrid),
+                PieceKind::King => KingBehaviour::get_legal_moves(from, *chessgrid),
+            };
+
+            let len = moves.len();
+
+            if len == 0 {
+                continue;
+            }
+
+            let idx = rng.random_range(0..len);
+            let to = moves.iter().nth(idx).unwrap();
+
+            chessgrid.pieces[from.0.x as usize][from.0.y as usize] = None;
+            chessgrid.pieces[to.0.x as usize][to.0.y as usize] = Some(piece_ent);
+
+            let mut from_tile = None;
+            let mut to_tile = None;
+
+            for (tile_entity, coords) in &tiles {
+                if *coords == from {
+                    from_tile = Some(tile_entity);
+                }
+                if *coords == *to {
+                    to_tile = Some(tile_entity);
+                }
+            }
+
+            let (Some(from_tile), Some(to_tile)) = (from_tile, to_tile) else {
+                return;
+            };
+
+            let mut extra_nodes = Vec::new();
+
+            if let Ok(from_children) = children.get(from_tile) {
+                for child in from_children.iter() {
+                    if child != piece_ent {
+                        extra_nodes.push(child);
+                    }
+                }
+            }
+
+            commands.entity(to_tile).add_child(piece_ent);
+
+            for node in extra_nodes {
+                commands.entity(to_tile).add_child(node);
+            }
+
+            break;
+        }
+    }
+
+    turns.0 = 3;
 }
 
 fn spawn_piece_node(color: PieceColor, bg: Handle<Image>, fg: Handle<Image>) -> impl Bundle {

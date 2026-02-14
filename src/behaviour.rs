@@ -64,6 +64,7 @@ impl ChessGrid {
 
 pub trait PieceBehaviour {
     fn get_legal_moves(pos: GridCoords, grid: ChessGrid) -> HashSet<GridCoords>;
+    fn get_attacks(pos: GridCoords, grid: ChessGrid) -> HashSet<GridCoords>;
 }
 
 pub struct WhitePawnBehaviour;
@@ -85,6 +86,10 @@ impl PieceBehaviour for WhitePawnBehaviour {
 
         moves
     }
+
+    fn get_attacks(pos: GridCoords, grid: ChessGrid) -> HashSet<GridCoords> {
+        todo!()
+    }
 }
 
 impl PieceBehaviour for BlackPawnBehaviour {
@@ -97,6 +102,10 @@ impl PieceBehaviour for BlackPawnBehaviour {
         }
 
         moves
+    }
+
+    fn get_attacks(pos: GridCoords, grid: ChessGrid) -> HashSet<GridCoords> {
+        todo!()
     }
 }
 
@@ -124,6 +133,10 @@ impl PieceBehaviour for KnightBehaviour {
 
         moves
     }
+
+    fn get_attacks(pos: GridCoords, grid: ChessGrid) -> HashSet<GridCoords> {
+        todo!()
+    }
 }
 
 impl PieceBehaviour for BishopBehaviour {
@@ -137,6 +150,10 @@ impl PieceBehaviour for BishopBehaviour {
 
         sliding_moves(pos, grid, &DIRECTIONS)
     }
+
+    fn get_attacks(pos: GridCoords, grid: ChessGrid) -> HashSet<GridCoords> {
+        todo!()
+    }
 }
 
 impl PieceBehaviour for RookBehaviour {
@@ -144,6 +161,10 @@ impl PieceBehaviour for RookBehaviour {
         const DIRECTIONS: [IVec2; 4] = [IVec2::X, IVec2::NEG_X, IVec2::Y, IVec2::NEG_Y];
 
         sliding_moves(pos, grid, &DIRECTIONS)
+    }
+
+    fn get_attacks(pos: GridCoords, grid: ChessGrid) -> HashSet<GridCoords> {
+        todo!()
     }
 }
 
@@ -161,6 +182,10 @@ impl PieceBehaviour for QueenBehaviour {
         ];
 
         sliding_moves(pos, grid, &DIRECTIONS)
+    }
+
+    fn get_attacks(pos: GridCoords, grid: ChessGrid) -> HashSet<GridCoords> {
+        todo!()
     }
 }
 
@@ -186,6 +211,10 @@ impl PieceBehaviour for KingBehaviour {
         }
 
         moves
+    }
+
+    fn get_attacks(pos: GridCoords, grid: ChessGrid) -> HashSet<GridCoords> {
+        todo!()
     }
 }
 
