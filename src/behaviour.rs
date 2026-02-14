@@ -125,3 +125,87 @@ impl PieceBehaviour for KnightBehaviour {
         moves
     }
 }
+
+impl PieceBehaviour for BishopBehaviour {
+    fn get_legal_moves(pos: GridCoords, grid: ChessGrid) -> HashSet<GridCoords> {
+        const DIRECTIONS: [IVec2; 4] = [
+            IVec2::ONE,
+            IVec2::NEG_ONE,
+            IVec2::new(1, -1),
+            IVec2::new(-1, 1),
+        ];
+
+        sliding_moves(pos, grid, &DIRECTIONS)
+    }
+}
+
+impl PieceBehaviour for RookBehaviour {
+    fn get_legal_moves(pos: GridCoords, grid: ChessGrid) -> HashSet<GridCoords> {
+        const DIRECTIONS: [IVec2; 4] = [IVec2::X, IVec2::NEG_X, IVec2::Y, IVec2::NEG_Y];
+
+        sliding_moves(pos, grid, &DIRECTIONS)
+    }
+}
+
+impl PieceBehaviour for QueenBehaviour {
+    fn get_legal_moves(pos: GridCoords, grid: ChessGrid) -> HashSet<GridCoords> {
+        const DIRECTIONS: [IVec2; 8] = [
+            IVec2::X,
+            IVec2::NEG_X,
+            IVec2::Y,
+            IVec2::NEG_Y,
+            IVec2::ONE,
+            IVec2::NEG_ONE,
+            IVec2::new(1, -1),
+            IVec2::new(-1, 1),
+        ];
+
+        sliding_moves(pos, grid, &DIRECTIONS)
+    }
+}
+
+impl PieceBehaviour for KingBehaviour {
+    fn get_legal_moves(pos: GridCoords, grid: ChessGrid) -> HashSet<GridCoords> {
+        let mut moves = HashSet::default();
+
+        const OFFSETS: [IVec2; 8] = [
+            IVec2::X,
+            IVec2::Y,
+            IVec2::NEG_X,
+            IVec2::NEG_Y,
+            IVec2::ONE,
+            IVec2::NEG_ONE,
+            IVec2::new(1, -1),
+            IVec2::new(-1, 1),
+        ];
+        for offset in OFFSETS {
+            let potential = GridCoords(pos.0 + offset);
+            if potential.in_bounds() && grid.get_piece(potential).is_none() {
+                moves.insert(potential);
+            }
+        }
+
+        moves
+    }
+}
+
+fn sliding_moves(pos: GridCoords, grid: ChessGrid, directions: &[IVec2]) -> HashSet<GridCoords> {
+    let mut moves = HashSet::default();
+
+    for dir in directions {
+        let mut current = pos.0 + *dir;
+
+        while GridCoords(current).in_bounds() {
+            let coords = GridCoords(current);
+
+            if grid.get_piece(coords).is_some() {
+                break;
+            }
+
+            moves.insert(coords);
+            current += *dir;
+        }
+    }
+
+    moves
+}

@@ -311,8 +311,10 @@ fn find_legal_moves(
         match piece.kind {
             PieceKind::Pawn => WhitePawnBehaviour::get_legal_moves(*grid_coords, *chessgrid),
             PieceKind::Knight => KnightBehaviour::get_legal_moves(*grid_coords, *chessgrid),
-
-            _ => HashSet::default(),
+            PieceKind::Bishop => BishopBehaviour::get_legal_moves(*grid_coords, *chessgrid),
+            PieceKind::Rook => RookBehaviour::get_legal_moves(*grid_coords, *chessgrid),
+            PieceKind::Queen => QueenBehaviour::get_legal_moves(*grid_coords, *chessgrid),
+            PieceKind::King => KingBehaviour::get_legal_moves(*grid_coords, *chessgrid),
         }
     } else {
         HashSet::default()
