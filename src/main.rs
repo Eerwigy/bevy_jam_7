@@ -9,6 +9,7 @@ mod chessboard;
 mod dev_tools;
 mod faller;
 mod loading;
+mod stats;
 mod title;
 
 use bevy::{asset::AssetMetaCheck, prelude::*};

@@ -1,4 +1,4 @@
-use crate::{AppState, assets::*, behaviour::*};
+use crate::{AppState, assets::*, behaviour::*, stats::TurnsStat};
 use bevy::{platform::collections::HashSet, prelude::*};
 
 const DARK: Color = Color::hsl(200.0, 1.0, 0.25);
@@ -17,16 +17,22 @@ pub(super) fn plugin(app: &mut App) {
             find_legal_moves,
             update_tile_colors,
             update_selected_text,
+            update_turns_text.run_if(resource_changed::<TurnsStat>),
+            pass_turn.run_if(resource_changed::<ButtonInput<KeyCode>>),
         )
             .chain()
             .run_if(in_state(AppState::Main)),
     );
+    app.insert_resource(TurnsStat(3));
     app.register_type::<GridCoords>();
     app.register_type::<ChessGrid>();
 }
 
 #[derive(Component)]
 pub struct SelectedText;
+
+#[derive(Component)]
+pub struct TurnsText;
 
 #[derive(Component)]
 pub struct SelectedSquare;
@@ -73,6 +79,15 @@ fn setup(
                 },
                 children![
                     (
+                        Name::new("Pass Text"),
+                        Text::new("Press [P] to Pass"),
+                        TextFont {
+                            font: font.title.clone(),
+                            font_size: 32.0,
+                            ..default()
+                        },
+                    ),
+                    (
                         Name::new("Money Text"),
                         Text::new("Money: "),
                         TextFont {
@@ -83,7 +98,8 @@ fn setup(
                     ),
                     (
                         Name::new("Turns Text"),
-                        Text::new("Turns Left: "),
+                        Text::new("Turns Left: 3"),
+                        TurnsText,
                         TextFont {
                             font: font.title.clone(),
                             font_size: 32.0,
@@ -195,6 +211,7 @@ fn setup(
 fn interact(
     mut commands: Commands,
     mut chessgrid: ResMut<ChessGrid>,
+    mut turns: ResMut<TurnsStat>,
     query: Query<
         (Entity, &Interaction, &GridCoords, Option<&LegalSquare>),
         (With<TileGrid>, Changed<Interaction>),
@@ -210,6 +227,10 @@ fn interact(
         }
 
         if is_legal.is_some() {
+            if turns.0 == 0 {
+                return;
+            }
+
             let Ok((from_entity, from_coords)) = selected.single() else {
                 return;
             };
@@ -251,6 +272,7 @@ fn interact(
                 commands.entity(entity).remove::<LegalSquare>();
             }
 
+            turns.0 -= 1;
             return;
         }
 
@@ -277,6 +299,7 @@ fn deselect(
 fn find_legal_moves(
     mut commands: Commands,
     chessgrid: Res<ChessGrid>,
+    turns: Res<TurnsStat>,
     children: Query<&Children>,
     selected_tile: Query<(Entity, &GridCoords), With<SelectedSquare>>,
     legal_tiles: Query<Entity, With<LegalSquare>>,
@@ -307,7 +330,7 @@ fn find_legal_moves(
         return;
     };
 
-    let moves = if piece.color == PieceColor::White {
+    let moves = if piece.color == PieceColor::White && turns.0 > 0 {
         match piece.kind {
             PieceKind::Pawn => WhitePawnBehaviour::get_legal_moves(*grid_coords, *chessgrid),
             PieceKind::Knight => KnightBehaviour::get_legal_moves(*grid_coords, *chessgrid),
@@ -379,6 +402,17 @@ fn update_selected_text(
     }
 
     text.0 = "Selected: Empty".to_string();
+}
+
+fn update_turns_text(mut text_query: Query<&mut Text, With<TurnsText>>, turns: Res<TurnsStat>) {
+    let mut text = text_query.single_mut().unwrap();
+    text.0 = format!("Turns Left: {}", turns.0);
+}
+
+fn pass_turn(mut turns: ResMut<TurnsStat>, keys: Res<ButtonInput<KeyCode>>) {
+    if keys.just_pressed(KeyCode::KeyP) {
+        turns.0 = 3;
+    }
 }
 
 fn spawn_piece_node(color: PieceColor, bg: Handle<Image>, fg: Handle<Image>) -> impl Bundle {
