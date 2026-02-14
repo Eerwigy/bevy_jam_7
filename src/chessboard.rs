@@ -214,16 +214,20 @@ fn interact(
                 return;
             };
 
-            let Ok(children) = children.get(from_entity) else {
+            let Ok(from_children) = children.get(from_entity) else {
                 return;
             };
 
             let mut piece_entity = None;
+            let mut piece_nodes = Vec::new();
 
-            for child in children.iter() {
+            for child in from_children.iter() {
                 if pieces.get(child).is_ok() {
                     piece_entity = Some(child);
-                    break;
+                } else {
+                    if commands.get_entity(child).is_ok() {
+                        piece_nodes.push(child);
+                    }
                 }
             }
 
@@ -236,6 +240,10 @@ fn interact(
                 Some(piece_entity);
 
             commands.entity(clicked_entity).add_child(piece_entity);
+
+            for node in piece_nodes {
+                commands.entity(clicked_entity).add_child(node);
+            }
 
             commands.entity(from_entity).remove::<SelectedSquare>();
 
