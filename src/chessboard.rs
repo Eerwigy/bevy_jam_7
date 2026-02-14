@@ -37,6 +37,9 @@ pub struct LegalSquare;
 #[derive(Component)]
 pub struct TileGrid;
 
+#[derive(Component)]
+pub struct PieceNode;
+
 fn setup(
     mut commands: Commands,
     font: Res<FontsCollection>,
@@ -164,21 +167,23 @@ fn setup(
                         };
 
                         square.insert(spawn_piece_node(color, bg, fg));
-
-                        let mut piece_entity: Option<Entity> = None;
-                        square.with_children(|parent| {
-                            let id = parent
-                                .spawn(Piece {
-                                    color,
-                                    kind,
-                                    health,
-                                })
+                        let mut piece = None;
+                        square.with_children(|p| {
+                            let id = p
+                                .spawn((
+                                    Name::new("Piece"),
+                                    Piece {
+                                        color,
+                                        kind,
+                                        health,
+                                    },
+                                ))
                                 .id();
 
-                            piece_entity = Some(id);
+                            piece = Some(id);
                         });
 
-                        chessgrid.pieces[x as usize][y as usize] = piece_entity;
+                        chessgrid.pieces[x as usize][y as usize] = piece;
                     }
                 }
             });
@@ -189,17 +194,63 @@ fn setup(
 
 fn interact(
     mut commands: Commands,
-    query: Query<(Entity, &Interaction), (With<TileGrid>, Changed<Interaction>)>,
-    selected: Query<Entity, With<SelectedSquare>>,
+    mut chessgrid: ResMut<ChessGrid>,
+    query: Query<
+        (Entity, &Interaction, &GridCoords, Option<&LegalSquare>),
+        (With<TileGrid>, Changed<Interaction>),
+    >,
+    children: Query<&Children>,
+    selected: Query<(Entity, &GridCoords), With<SelectedSquare>>,
+    legal_tiles: Query<Entity, With<LegalSquare>>,
+    pieces: Query<&Piece>,
 ) {
-    for (entity, interaction) in &query {
-        if *interaction == Interaction::Pressed {
-            for e in &selected {
-                commands.entity(e).remove::<SelectedSquare>();
+    for (clicked_entity, interaction, clicked_coords, is_legal) in &query {
+        if *interaction != Interaction::Pressed {
+            continue;
+        }
+
+        if is_legal.is_some() {
+            let Ok((from_entity, from_coords)) = selected.single() else {
+                return;
+            };
+
+            let Ok(children) = children.get(from_entity) else {
+                return;
+            };
+
+            let mut piece_entity = None;
+
+            for child in children.iter() {
+                if pieces.get(child).is_ok() {
+                    piece_entity = Some(child);
+                    break;
+                }
             }
 
-            commands.entity(entity).insert(SelectedSquare);
+            let Some(piece_entity) = piece_entity else {
+                return;
+            };
+
+            chessgrid.pieces[from_coords.0.x as usize][from_coords.0.y as usize] = None;
+            chessgrid.pieces[clicked_coords.0.x as usize][clicked_coords.0.y as usize] =
+                Some(piece_entity);
+
+            commands.entity(clicked_entity).add_child(piece_entity);
+
+            commands.entity(from_entity).remove::<SelectedSquare>();
+
+            for entity in &legal_tiles {
+                commands.entity(entity).remove::<LegalSquare>();
+            }
+
+            return;
         }
+
+        for (entity, _) in &selected {
+            commands.entity(entity).remove::<SelectedSquare>();
+        }
+
+        commands.entity(clicked_entity).insert(SelectedSquare);
     }
 }
 
@@ -329,6 +380,7 @@ fn spawn_piece_node(color: PieceColor, bg: Handle<Image>, fg: Handle<Image>) -> 
     children![
         (
             Name::new("Piece Node Bg"),
+            PieceNode,
             Node {
                 width: percent(100.0),
                 position_type: PositionType::Absolute,
@@ -342,6 +394,7 @@ fn spawn_piece_node(color: PieceColor, bg: Handle<Image>, fg: Handle<Image>) -> 
         ),
         (
             Name::new("Piece Node Fg"),
+            PieceNode,
             Node {
                 width: percent(100.0),
                 position_type: PositionType::Absolute,
