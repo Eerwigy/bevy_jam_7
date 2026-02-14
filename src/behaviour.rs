@@ -223,13 +223,12 @@ fn sliding_moves(pos: GridCoords, grid: ChessGrid, directions: &[IVec2]) -> Hash
 
     for dir in directions {
         let mut current = pos.0 + *dir;
-        let potential = GridCoords(current);
 
-        while potential.in_bounds() {
+        while GridCoords(current).in_bounds() {
+            let potential = GridCoords(current);
             if grid.get_piece(potential).is_some() {
                 break;
             }
-
             moves.insert(potential);
             current += *dir;
         }
