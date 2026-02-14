@@ -75,6 +75,10 @@ pub struct RookBehaviour;
 pub struct QueenBehaviour;
 pub struct KingBehaviour;
 
+impl WhitePawnBehaviour {
+    const ATTACKS: [IVec2; 2] = [IVec2::NEG_ONE, IVec2::new(1, -1)];
+}
+
 impl PieceBehaviour for WhitePawnBehaviour {
     fn get_legal_moves(pos: GridCoords, grid: ChessGrid) -> HashSet<GridCoords> {
         let mut moves = HashSet::default();
@@ -88,8 +92,21 @@ impl PieceBehaviour for WhitePawnBehaviour {
     }
 
     fn get_attacks(pos: GridCoords, grid: ChessGrid) -> HashSet<GridCoords> {
-        todo!()
+        let mut attack = HashSet::default();
+
+        for offset in Self::ATTACKS {
+            let potential = GridCoords(pos.0 + offset);
+            if potential.in_bounds() && grid.get_piece(potential).is_some() {
+                attack.insert(potential);
+            }
+        }
+
+        attack
     }
+}
+
+impl BlackPawnBehaviour {
+    const ATTACKS: [IVec2; 2] = [IVec2::ONE, IVec2::new(-1, 1)];
 }
 
 impl PieceBehaviour for BlackPawnBehaviour {
@@ -105,26 +122,37 @@ impl PieceBehaviour for BlackPawnBehaviour {
     }
 
     fn get_attacks(pos: GridCoords, grid: ChessGrid) -> HashSet<GridCoords> {
-        todo!()
+        let mut attack = HashSet::default();
+
+        for offset in Self::ATTACKS {
+            let potential = GridCoords(pos.0 + offset);
+            if potential.in_bounds() && grid.get_piece(potential).is_some() {
+                attack.insert(potential);
+            }
+        }
+
+        attack
     }
+}
+
+impl KnightBehaviour {
+    const OFFSETS: [IVec2; 8] = [
+        IVec2::new(1, 2),
+        IVec2::new(2, 1),
+        IVec2::new(2, -1),
+        IVec2::new(1, -2),
+        IVec2::new(-1, -2),
+        IVec2::new(-2, -1),
+        IVec2::new(-2, 1),
+        IVec2::new(-1, 2),
+    ];
 }
 
 impl PieceBehaviour for KnightBehaviour {
     fn get_legal_moves(pos: GridCoords, grid: ChessGrid) -> HashSet<GridCoords> {
         let mut moves = HashSet::default();
 
-        const OFFSETS: [IVec2; 8] = [
-            IVec2::new(1, 2),
-            IVec2::new(2, 1),
-            IVec2::new(2, -1),
-            IVec2::new(1, -2),
-            IVec2::new(-1, -2),
-            IVec2::new(-2, -1),
-            IVec2::new(-2, 1),
-            IVec2::new(-1, 2),
-        ];
-
-        for offset in OFFSETS {
+        for offset in Self::OFFSETS {
             let potential = GridCoords(pos.0 + offset);
             if potential.in_bounds() && grid.get_piece(potential).is_none() {
                 moves.insert(potential);
@@ -135,75 +163,93 @@ impl PieceBehaviour for KnightBehaviour {
     }
 
     fn get_attacks(pos: GridCoords, grid: ChessGrid) -> HashSet<GridCoords> {
-        todo!()
+        let mut attack = HashSet::default();
+
+        for offset in Self::OFFSETS {
+            let potential = GridCoords(pos.0 + offset);
+            if potential.in_bounds() && grid.get_piece(potential).is_some() {
+                attack.insert(potential);
+            }
+        }
+
+        attack
     }
+}
+
+impl BishopBehaviour {
+    const DIRECTIONS: [IVec2; 4] = [
+        IVec2::ONE,
+        IVec2::NEG_ONE,
+        IVec2::new(1, -1),
+        IVec2::new(-1, 1),
+    ];
 }
 
 impl PieceBehaviour for BishopBehaviour {
     fn get_legal_moves(pos: GridCoords, grid: ChessGrid) -> HashSet<GridCoords> {
-        const DIRECTIONS: [IVec2; 4] = [
-            IVec2::ONE,
-            IVec2::NEG_ONE,
-            IVec2::new(1, -1),
-            IVec2::new(-1, 1),
-        ];
-
-        sliding_moves(pos, grid, &DIRECTIONS)
+        sliding_moves(pos, grid, &Self::DIRECTIONS)
     }
 
     fn get_attacks(pos: GridCoords, grid: ChessGrid) -> HashSet<GridCoords> {
-        todo!()
+        sliding_attacks(pos, grid, &Self::DIRECTIONS)
     }
+}
+
+impl RookBehaviour {
+    const DIRECTIONS: [IVec2; 4] = [IVec2::X, IVec2::NEG_X, IVec2::Y, IVec2::NEG_Y];
 }
 
 impl PieceBehaviour for RookBehaviour {
     fn get_legal_moves(pos: GridCoords, grid: ChessGrid) -> HashSet<GridCoords> {
-        const DIRECTIONS: [IVec2; 4] = [IVec2::X, IVec2::NEG_X, IVec2::Y, IVec2::NEG_Y];
-
-        sliding_moves(pos, grid, &DIRECTIONS)
+        sliding_moves(pos, grid, &Self::DIRECTIONS)
     }
 
     fn get_attacks(pos: GridCoords, grid: ChessGrid) -> HashSet<GridCoords> {
-        todo!()
+        sliding_attacks(pos, grid, &Self::DIRECTIONS)
     }
+}
+
+impl QueenBehaviour {
+    const DIRECTIONS: [IVec2; 8] = [
+        IVec2::X,
+        IVec2::NEG_X,
+        IVec2::Y,
+        IVec2::NEG_Y,
+        IVec2::ONE,
+        IVec2::NEG_ONE,
+        IVec2::new(1, -1),
+        IVec2::new(-1, 1),
+    ];
 }
 
 impl PieceBehaviour for QueenBehaviour {
     fn get_legal_moves(pos: GridCoords, grid: ChessGrid) -> HashSet<GridCoords> {
-        const DIRECTIONS: [IVec2; 8] = [
-            IVec2::X,
-            IVec2::NEG_X,
-            IVec2::Y,
-            IVec2::NEG_Y,
-            IVec2::ONE,
-            IVec2::NEG_ONE,
-            IVec2::new(1, -1),
-            IVec2::new(-1, 1),
-        ];
-
-        sliding_moves(pos, grid, &DIRECTIONS)
+        sliding_moves(pos, grid, &Self::DIRECTIONS)
     }
 
     fn get_attacks(pos: GridCoords, grid: ChessGrid) -> HashSet<GridCoords> {
-        todo!()
+        sliding_attacks(pos, grid, &Self::DIRECTIONS)
     }
+}
+
+impl KingBehaviour {
+    const OFFSETS: [IVec2; 8] = [
+        IVec2::X,
+        IVec2::Y,
+        IVec2::NEG_X,
+        IVec2::NEG_Y,
+        IVec2::ONE,
+        IVec2::NEG_ONE,
+        IVec2::new(1, -1),
+        IVec2::new(-1, 1),
+    ];
 }
 
 impl PieceBehaviour for KingBehaviour {
     fn get_legal_moves(pos: GridCoords, grid: ChessGrid) -> HashSet<GridCoords> {
         let mut moves = HashSet::default();
 
-        const OFFSETS: [IVec2; 8] = [
-            IVec2::X,
-            IVec2::Y,
-            IVec2::NEG_X,
-            IVec2::NEG_Y,
-            IVec2::ONE,
-            IVec2::NEG_ONE,
-            IVec2::new(1, -1),
-            IVec2::new(-1, 1),
-        ];
-        for offset in OFFSETS {
+        for offset in Self::OFFSETS {
             let potential = GridCoords(pos.0 + offset);
             if potential.in_bounds() && grid.get_piece(potential).is_none() {
                 moves.insert(potential);
@@ -214,7 +260,16 @@ impl PieceBehaviour for KingBehaviour {
     }
 
     fn get_attacks(pos: GridCoords, grid: ChessGrid) -> HashSet<GridCoords> {
-        todo!()
+        let mut attacks = HashSet::default();
+
+        for offset in Self::OFFSETS {
+            let potential = GridCoords(pos.0 + offset);
+            if potential.in_bounds() && grid.get_piece(potential).is_some() {
+                attacks.insert(potential);
+            }
+        }
+
+        attacks
     }
 }
 
@@ -235,4 +290,24 @@ fn sliding_moves(pos: GridCoords, grid: ChessGrid, directions: &[IVec2]) -> Hash
     }
 
     moves
+}
+
+fn sliding_attacks(pos: GridCoords, grid: ChessGrid, directions: &[IVec2]) -> HashSet<GridCoords> {
+    let mut attacks = HashSet::default();
+
+    for dir in directions {
+        let mut current = pos.0 + *dir;
+
+        while GridCoords(current).in_bounds() {
+            let potential = GridCoords(current);
+            attacks.insert(potential);
+
+            if grid.get_piece(potential).is_some() {
+                break;
+            }
+            current += *dir;
+        }
+    }
+
+    attacks
 }
