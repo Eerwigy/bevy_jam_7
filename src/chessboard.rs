@@ -43,6 +43,9 @@ pub struct SelectedSquare;
 pub struct LegalSquare;
 
 #[derive(Component)]
+pub struct AttackedSquare;
+
+#[derive(Component)]
 pub struct TileGrid;
 
 #[derive(Component)]
@@ -304,11 +307,16 @@ fn find_legal_moves(
     turns: Res<TurnsStat>,
     children: Query<&Children>,
     selected_tile: Query<(Entity, &GridCoords), With<SelectedSquare>>,
+    attacked_tiles: Query<Entity, With<AttackedSquare>>,
     legal_tiles: Query<Entity, With<LegalSquare>>,
     pieces: Query<&Piece>,
 ) {
     for entity in &legal_tiles {
         commands.entity(entity).remove::<LegalSquare>();
+    }
+
+    for entity in &attacked_tiles {
+        commands.entity(entity).remove::<AttackedSquare>();
     }
 
     let Ok((tile_entity, grid_coords)) = selected_tile.single() else {
@@ -349,6 +357,31 @@ fn find_legal_moves(
         let square_entity = chessgrid.get_square(coords);
         commands.entity(square_entity).insert(LegalSquare);
     }
+    let attacks = match piece.kind {
+        PieceKind::Pawn => {
+            if piece.color == PieceColor::White {
+                WhitePawnBehaviour::get_attacks(*grid_coords, *chessgrid)
+            } else {
+                BlackPawnBehaviour::get_attacks(*grid_coords, *chessgrid)
+            }
+        }
+        PieceKind::Knight => KnightBehaviour::get_attacks(*grid_coords, *chessgrid),
+        PieceKind::Bishop => BishopBehaviour::get_attacks(*grid_coords, *chessgrid),
+        PieceKind::Rook => RookBehaviour::get_attacks(*grid_coords, *chessgrid),
+        PieceKind::Queen => QueenBehaviour::get_attacks(*grid_coords, *chessgrid),
+        PieceKind::King => KingBehaviour::get_attacks(*grid_coords, *chessgrid),
+    };
+
+    for coords in attacks {
+        if let Some(target_entity) = chessgrid.get_piece(coords) {
+            if let Ok(target_piece) = pieces.get(target_entity) {
+                if target_piece.color != piece.color {
+                    let square_entity = chessgrid.get_square(coords);
+                    commands.entity(square_entity).insert(AttackedSquare);
+                }
+            }
+        }
+    }
 }
 
 fn update_tile_colors(
@@ -358,16 +391,19 @@ fn update_tile_colors(
             &Interaction,
             Option<&SelectedSquare>,
             Option<&LegalSquare>,
+            Option<&AttackedSquare>,
             &mut BackgroundColor,
         ),
         With<TileGrid>,
     >,
 ) {
-    for (grid, interaction, selected, legal, mut bg) in &mut query {
+    for (grid, interaction, selected, legal, attack, mut bg) in &mut query {
         bg.0 = if selected.is_some() {
             SELECT
         } else if legal.is_some() {
             LEGAL
+        } else if attack.is_some() {
+            ATTACK
         } else if *interaction == Interaction::Hovered {
             HOVER
         } else if grid.0.element_sum() % 2 == 0 {
@@ -645,15 +681,6 @@ fn apply_damage_for_color(
             piece.health -= dmg;
 
             if piece.health <= 0.0 {
-                // for x in 0..8 {
-                //     for y in 0..8 {
-                //         if chessgrid.pieces[x][y] == Some(ent) {
-                //             chessgrid.pieces[x][y] = None;
-                //         }
-                //     }
-                // }
-
-                // commands.entity(ent).despawn();
                 for x in 0..8 {
                     for y in 0..8 {
                         if chessgrid.pieces[x][y] == Some(ent) {
