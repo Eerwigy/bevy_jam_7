@@ -1,7 +1,4 @@
-use crate::{
-    AppState,
-    assets::{FontsCollection, SpritesBgCollection, SpritesFgCollection},
-};
+use crate::{AppState, assets::*};
 use bevy::prelude::*;
 use bevy_asset_loader::prelude::*;
 
@@ -11,7 +8,8 @@ pub(super) fn plugin(app: &mut App) {
             .continue_to_state(AppState::Title)
             .load_collection::<FontsCollection>()
             .load_collection::<SpritesFgCollection>()
-            .load_collection::<SpritesBgCollection>(),
+            .load_collection::<SpritesBgCollection>()
+            .load_collection::<SoundsCollection>(),
     );
 
     app.add_systems(OnEnter(AppState::Loading), spawn_loading_screen);

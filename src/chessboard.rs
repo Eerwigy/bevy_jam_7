@@ -1,7 +1,8 @@
 use crate::{
     AppState, Typewriter, assets::*, behaviour::*, generate_character_text, stats::TurnsStat,
 };
-use bevy::{platform::collections::HashSet, prelude::*};
+use bevy::{audio::Sample, platform::collections::HashSet, prelude::*};
+use bevy_seedling::sample::{AudioSample, SamplePlayer};
 use rand::prelude::*;
 
 const DARK: Color = Color::hsl(200.0, 1.0, 0.25);
@@ -528,6 +529,7 @@ fn pass_turn(
     mut pieces: Query<(Entity, &mut Piece)>,
     mut bubble_query: Query<(&mut Typewriter, &mut Text), With<QueenBubbleText>>,
     keys: Res<ButtonInput<KeyCode>>,
+    sounds: Res<SoundsCollection>,
     children: Query<&Children>,
     tiles: Query<(Entity, &GridCoords), With<TileGrid>>,
 ) {
@@ -535,12 +537,15 @@ fn pass_turn(
         return;
     }
 
+    commands.spawn(SamplePlayer::new(sounds.passturn.clone()));
+
     apply_damage_for_color(
         &mut commands,
         &mut chessgrid,
         &mut pieces,
         &children,
         PieceColor::White,
+        sounds.vineboom.clone(),
     );
 
     let mut rng = rand::rng();
@@ -624,6 +629,7 @@ fn pass_turn(
         &mut pieces,
         &children,
         PieceColor::Black,
+        sounds.vineboom.clone(),
     );
 
     if let Ok((mut typewriter, mut text)) = bubble_query.single_mut() {
@@ -709,6 +715,7 @@ fn apply_damage_for_color(
     pieces_query: &mut Query<(Entity, &mut Piece)>,
     children: &Query<&Children>,
     attacker_color: PieceColor,
+    s: Handle<AudioSample>,
 ) {
     const DAMAGE: f32 = 10.0;
 
@@ -762,6 +769,7 @@ fn apply_damage_for_color(
             piece.health -= dmg;
 
             if piece.health <= 0.0 {
+                commands.spawn(SamplePlayer::new(s.clone()));
                 for x in 0..8 {
                     for y in 0..8 {
                         if chessgrid.pieces[x][y] == Some(ent) {
