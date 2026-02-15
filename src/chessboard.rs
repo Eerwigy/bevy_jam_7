@@ -1,4 +1,6 @@
-use crate::{AppState, assets::*, behaviour::*, stats::TurnsStat};
+use crate::{
+    AppState, Typewriter, assets::*, behaviour::*, generate_character_text, stats::TurnsStat,
+};
 use bevy::{platform::collections::HashSet, prelude::*};
 use rand::prelude::*;
 
@@ -51,6 +53,9 @@ pub struct TileGrid;
 #[derive(Component)]
 pub struct PieceNode;
 
+#[derive(Component)]
+pub struct QueenBubbleText;
+
 fn setup(
     mut commands: Commands,
     font: Res<FontsCollection>,
@@ -93,27 +98,9 @@ fn setup(
                         },
                     ),
                     (
-                        Name::new("Money Text"),
-                        Text::new("Money: "),
-                        TextFont {
-                            font: font.title.clone(),
-                            font_size: 32.0,
-                            ..default()
-                        },
-                    ),
-                    (
                         Name::new("Turns Text"),
                         Text::new("Turns Left: 3"),
                         TurnsText,
-                        TextFont {
-                            font: font.title.clone(),
-                            font_size: 32.0,
-                            ..default()
-                        },
-                    ),
-                    (
-                        Name::new("Abilities Text"),
-                        Text::new("Abilities Left: "),
                         TextFont {
                             font: font.title.clone(),
                             font_size: 32.0,
@@ -207,6 +194,93 @@ fn setup(
                         chessgrid.pieces[x as usize][y as usize] = piece;
                     }
                 }
+            });
+            p.spawn((
+                Name::new("Right Panel"),
+                Node {
+                    height: percent(100.0),
+                    width: px(300.0),
+                    flex_direction: FlexDirection::Column,
+                    justify_content: JustifyContent::SpaceBetween,
+                    align_items: AlignItems::Center,
+                    position_type: PositionType::Absolute,
+                    right: px(10.0),
+                    top: px(10.0),
+                    bottom: px(10.0),
+                    padding: px(10.0).into(),
+                    ..default()
+                },
+            ))
+            .with_children(|panel| {
+                panel
+                    .spawn((
+                        Name::new("Text Bubble"),
+                        Node {
+                            width: percent(100.0),
+                            min_height: px(120.0),
+                            margin: UiRect::bottom(px(20.0)),
+                            padding: px(15.0).into(),
+                            ..default()
+                        },
+                        BackgroundColor(Color::hsl(0.0, 0.0, 0.9)),
+                    ))
+                    .with_children(|bubble| {
+                        bubble.spawn((
+                            Name::new("Character Bubble Text"),
+                            Text::new("Hello!"),
+                            QueenBubbleText,
+                            Typewriter {
+                                full_text: generate_character_text(),
+                                visible_chars: 0,
+                                timer: Timer::from_seconds(0.03, TimerMode::Repeating),
+                            },
+                            TextColor(Color::BLACK),
+                            TextFont {
+                                font: font.title.clone(),
+                                font_size: 22.0,
+                                ..default()
+                            },
+                        ));
+                    });
+
+                panel
+                    .spawn((
+                        Name::new("Character"),
+                        Node {
+                            flex_direction: FlexDirection::Column,
+                            justify_content: JustifyContent::FlexEnd,
+                            align_items: AlignItems::Center,
+                            ..default()
+                        },
+                    ))
+                    .with_children(|p| {
+                        p.spawn((
+                            Name::new("Character Bg"),
+                            ImageNode {
+                                image: bg.queen.clone(),
+                                color: Color::hsl(10.0, 1.0, 0.25),
+                                ..default()
+                            },
+                            Node {
+                                width: px(200.0),
+                                position_type: PositionType::Absolute,
+                                ..default()
+                            },
+                        ));
+
+                        p.spawn((
+                            Name::new("Character Fg"),
+                            ImageNode {
+                                image: fg.queen.clone(),
+                                ..default()
+                            },
+                            Node {
+                                width: px(200.0),
+                                position_type: PositionType::Absolute,
+                                ..default()
+                            },
+                        ));
+                    });
             });
         });
 

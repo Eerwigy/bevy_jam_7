@@ -14,6 +14,7 @@ mod title;
 
 use bevy::{asset::AssetMetaCheck, prelude::*};
 use bevy_seedling::SeedlingPlugin;
+use rand::prelude::*;
 
 fn main() -> AppExit {
     App::new().add_plugins(AppPlugin).run()
@@ -53,6 +54,7 @@ impl Plugin for AppPlugin {
 
         app.init_state::<AppState>();
         app.insert_resource(ClearColor(Color::hsl(200.0, 0.9, 0.1)));
+        app.add_systems(Update, update_typewriters);
     }
 }
 
@@ -62,4 +64,39 @@ pub enum AppState {
     Loading,
     Title,
     Main,
+}
+
+#[derive(Component)]
+pub struct Typewriter {
+    pub full_text: String,
+    pub visible_chars: usize,
+    pub timer: Timer,
+}
+
+fn update_typewriters(mut query: Query<(&mut Text, &mut Typewriter)>, time: Res<Time>) {
+    for (mut text, mut writer) in &mut query {
+        writer.timer.tick(time.delta());
+
+        if writer.timer.just_finished() {
+            if writer.visible_chars < writer.full_text.len() {
+                writer.visible_chars += 1;
+                text.0 = writer.full_text[..writer.visible_chars].to_string();
+            }
+        }
+    }
+}
+
+pub fn generate_character_text() -> String {
+    const CHARS: &str = "GERNIAFDBM  ";
+    const LEN: usize = CHARS.len();
+    let mut string = String::new();
+    let mut rng = rand::rng();
+    let str_len = rng.random_range(25..40);
+    for _ in 0..str_len {
+        let x = CHARS.chars().nth(rng.random_range(..LEN)).unwrap();
+        string.push(x);
+    }
+    string.push('!');
+
+    string
 }
