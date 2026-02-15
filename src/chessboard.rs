@@ -413,16 +413,24 @@ fn update_turns_text(mut text_query: Query<&mut Text, With<TurnsText>>, turns: R
 
 fn pass_turn(
     mut commands: Commands,
-    mut turns: ResMut<TurnsStat>,
-    keys: Res<ButtonInput<KeyCode>>,
     mut chessgrid: ResMut<ChessGrid>,
-    pieces: Query<&Piece>,
-    tiles: Query<(Entity, &GridCoords), With<TileGrid>>,
+    mut turns: ResMut<TurnsStat>,
+    mut pieces: Query<(Entity, &mut Piece)>,
+    keys: Res<ButtonInput<KeyCode>>,
     children: Query<&Children>,
+    tiles: Query<(Entity, &GridCoords), With<TileGrid>>,
 ) {
     if !keys.just_pressed(KeyCode::KeyP) {
         return;
     }
+
+    apply_damage_for_color(
+        &mut commands,
+        &mut chessgrid,
+        &mut pieces,
+        &children,
+        PieceColor::White,
+    );
 
     let mut rng = rand::rng();
 
@@ -436,7 +444,7 @@ fn pass_turn(
                 continue;
             };
 
-            let piece = pieces.get(piece_ent).unwrap();
+            let (_, piece) = pieces.get(piece_ent).unwrap();
 
             if piece.color == PieceColor::White {
                 continue;
@@ -498,6 +506,14 @@ fn pass_turn(
             break;
         }
     }
+
+    apply_damage_for_color(
+        &mut commands,
+        &mut chessgrid,
+        &mut pieces,
+        &children,
+        PieceColor::Black,
+    );
 
     turns.0 = 3;
 }
@@ -568,4 +584,98 @@ fn get_piece(x: i32, y: i32) -> Option<(PieceColor, PieceKind)> {
     }
 
     None
+}
+
+fn apply_damage_for_color(
+    commands: &mut Commands,
+    chessgrid: &mut ChessGrid,
+    pieces_query: &mut Query<(Entity, &mut Piece)>,
+    children: &Query<&Children>,
+    attacker_color: PieceColor,
+) {
+    const DAMAGE: f32 = 10.0;
+
+    let mut damage_events: Vec<(Entity, f32)> = Vec::new();
+
+    for x in 0..8 {
+        for y in 0..8 {
+            let from = GridCoords::new(x as i32, y as i32);
+
+            let Some(attacker_ent) = chessgrid.get_piece(from) else {
+                continue;
+            };
+
+            let Ok((_, attacker_piece)) = pieces_query.get_mut(attacker_ent) else {
+                continue;
+            };
+
+            if attacker_piece.color != attacker_color {
+                continue;
+            }
+
+            let attacks = match attacker_piece.kind {
+                PieceKind::Pawn => {
+                    if attacker_piece.color == PieceColor::White {
+                        WhitePawnBehaviour::get_attacks(from, *chessgrid)
+                    } else {
+                        BlackPawnBehaviour::get_attacks(from, *chessgrid)
+                    }
+                }
+                PieceKind::Knight => KnightBehaviour::get_attacks(from, *chessgrid),
+                PieceKind::Bishop => BishopBehaviour::get_attacks(from, *chessgrid),
+                PieceKind::Rook => RookBehaviour::get_attacks(from, *chessgrid),
+                PieceKind::Queen => QueenBehaviour::get_attacks(from, *chessgrid),
+                PieceKind::King => KingBehaviour::get_attacks(from, *chessgrid),
+            };
+
+            for target_pos in attacks {
+                if let Some(target_ent) = chessgrid.get_piece(target_pos) {
+                    if let Ok((_, target_piece)) = pieces_query.get_mut(target_ent) {
+                        if target_piece.color != attacker_color {
+                            damage_events.push((target_ent, DAMAGE));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    for (entity, dmg) in damage_events {
+        if let Ok((ent, mut piece)) = pieces_query.get_mut(entity) {
+            piece.health -= dmg;
+
+            if piece.health <= 0.0 {
+                // for x in 0..8 {
+                //     for y in 0..8 {
+                //         if chessgrid.pieces[x][y] == Some(ent) {
+                //             chessgrid.pieces[x][y] = None;
+                //         }
+                //     }
+                // }
+
+                // commands.entity(ent).despawn();
+                for x in 0..8 {
+                    for y in 0..8 {
+                        if chessgrid.pieces[x][y] == Some(ent) {
+                            chessgrid.pieces[x][y] = None;
+                        }
+                    }
+                }
+
+                for x in 0..8 {
+                    for y in 0..8 {
+                        if let Some(square_ent) = chessgrid.squares[x][y] {
+                            if let Ok(tile_children) = children.get(square_ent) {
+                                if tile_children.contains(&ent) {
+                                    for child in tile_children.iter() {
+                                        commands.entity(child).despawn();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
