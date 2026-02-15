@@ -232,7 +232,7 @@ fn setup(
                             Typewriter {
                                 full_text: generate_character_text(),
                                 visible_chars: 0,
-                                timer: Timer::from_seconds(0.03, TimerMode::Repeating),
+                                timer: Timer::from_seconds(0.06, TimerMode::Repeating),
                             },
                             TextColor(Color::BLACK),
                             TextFont {
@@ -526,6 +526,7 @@ fn pass_turn(
     mut chessgrid: ResMut<ChessGrid>,
     mut turns: ResMut<TurnsStat>,
     mut pieces: Query<(Entity, &mut Piece)>,
+    mut bubble_query: Query<(&mut Typewriter, &mut Text), With<QueenBubbleText>>,
     keys: Res<ButtonInput<KeyCode>>,
     children: Query<&Children>,
     tiles: Query<(Entity, &GridCoords), With<TileGrid>>,
@@ -625,6 +626,12 @@ fn pass_turn(
         PieceColor::Black,
     );
 
+    if let Ok((mut typewriter, mut text)) = bubble_query.single_mut() {
+        typewriter.full_text = generate_character_text();
+        typewriter.visible_chars = 0;
+        typewriter.timer.reset();
+        text.0.clear();
+    }
     turns.0 = 3;
 }
 
